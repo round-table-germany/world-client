@@ -70,3 +70,12 @@ npm run build      # tsc → dist/
 npm test
 npm run typecheck
 ```
+
+## Release
+
+Version in `package.json` anheben (SemVer), committen und taggen – Projekte binden den Tag ein:
+
+```bash
+npm version minor            # erzeugt Commit und Tag vX.Y.Z
+git push --follow-tags
+```
