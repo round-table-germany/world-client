@@ -31,6 +31,7 @@ describe('WorldClient.login', () => {
     expect(await client.login('admin', 'falsch')).toEqual({
       kind: 'failed',
       message: 'Invalid username or password',
+      code: 'login_failed',
     });
   });
 

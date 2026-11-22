@@ -33,6 +33,11 @@ export class TtlCache<V> {
     return value;
   }
 
+  /** Entfernt alle Einträge, deren Schlüssel mit `prefix` beginnt. */
+  deletePrefix(prefix: string): void {
+    for (const key of [...this.map.keys()]) if (key.startsWith(prefix)) this.map.delete(key);
+  }
+
   clear(): void {
     this.map.clear();
   }

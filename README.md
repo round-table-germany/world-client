@@ -6,8 +6,9 @@ Auswertung von Profil (Ämter, Profilbild, Mitgliedszeitraum) und Vorstandsliste
 
 Node.js ≥ 22.13, ESM, keine Laufzeitabhängigkeiten (eingebautes `fetch`).
 
-Abgedeckt sind bisher 10 von 42 Endpunkten (Login, eigenes Profil lesen, Ebenen, Mitglieder, Verzeichnis,
-Veranstaltungssuche). Was fehlt, steht in [NEXT_STEPS.md](NEXT_STEPS.md).
+Abgedeckt sind alle 42 dokumentierten Endpunkte (Login, Profil lesen und bearbeiten, Ebenen, Mitglieder,
+Verzeichnis, Veranstaltungen, Favoriten, Benachrichtigungen, Geolocation). Was noch offen ist, steht in
+[NEXT_STEPS.md](NEXT_STEPS.md).
 
 ## Installation
 
@@ -45,9 +46,46 @@ if (res.kind === 'ok') {
 }
 ```
 
+Weitere Beispiele:
+
+```ts
+// Alle Seiten eines paginierten Endpunkts durchlaufen
+for await (const m of world.paginate((offset) =>
+  world.searchMembers(global_auth_token, { query: 'Max' }, offset),
+)) {
+  console.log(m.first_name, m.last_name);
+}
+
+// Profil bearbeiten (lokales Token); Anlegen liefert die neue ID
+const { id } = await world.addSecondaryEmail(local_auth_token, {
+  type: 'work',
+  value: 'max@firma.de',
+  cc: false,
+});
+await world.setPrivacy(local_auth_token, `secondary-email-${id}`, 'club');
+await world.updateProfilePic(local_auth_token, new Blob([jpegBytes], { type: 'image/jpeg' }), 'ich.jpg');
+
+// Favoriten und Geolocation (globales Token)
+await world.addFavorite(global_auth_token, 'member', 12345);
+await world.setGeolocationPermission(global_auth_token, true);
+await world.updateLocation(global_auth_token, {
+  coords: { latitude: 53.55, longitude: 9.99 },
+  location: { name: 'Hamburg', country: 'Germany' }, // Geocoding macht der Aufrufer
+  speed: 0,
+  accuracy: 10,
+});
+const nearby = await world.nearbyMembers(global_auth_token);
+```
+
+Drossel und Wiederholung: Standardmäßig höchstens 90 Anfragen pro Token und Minute, für `geolocation/…` zusätzlich
+höchstens 8 (`geolocationRequestsPerMinute`). Lesende Aufrufe werden bei 429, 502/503/504 und Netzfehlern
+wiederholt, schreibende nur bei 429 (sonst drohen Duplikate), der Login nie. Für Tests gegen die Demo-Umgebung gibt
+es `DEMO_BASE_URL`.
+
 Fehler: `WorldForbiddenError` (401/403: Token ungültig, Mitglied inaktiv, kein Zugriff), `WorldUnavailableError`
-(nicht erreichbar, Zeitüberschreitung, 429/5xx nach Wiederholungen), sonst `WorldApiError` mit `status`.
-Auf Klasse und `status` prüfen, nicht auf den Text.
+(nicht erreichbar, Zeitüberschreitung, 429/5xx nach Wiederholungen), sonst `WorldApiError` mit `status` und – bei
+Validierungsfehlern (400) – dem `code` von .WORLD (z. B. Primär-E-Mail schon vergeben).
+Auf Klasse, `status` und `code` prüfen, nicht auf den Text.
 
 ## Mock für Tests und Entwicklung
 

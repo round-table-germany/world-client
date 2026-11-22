@@ -39,6 +39,26 @@ export const FUNCTIONS = [
   { id: 5, name: 'IRO', display_order: 5 },
 ];
 
+export const FAMILIES = [
+  { id: 1, name: 'Round Table International', path: 'rt', logo: 'https://example.com/rt-logo.png' },
+  { id: 2, name: '41 Club International', path: '41', logo: 'https://example.com/41-logo.png' },
+  { id: 3, name: 'Ladies Circle International', path: 'lc', logo: 'https://example.com/lc-logo.png' },
+  { id: 4, name: 'Agora Club International', path: 'agora', logo: 'https://example.com/agora-logo.png' },
+  {
+    id: 5,
+    name: 'Tangent Club International',
+    path: 'tangent',
+    logo: 'https://example.com/tangent-logo.png',
+  },
+];
+
+/** Eigene Felder (`custom-<id>`); `options` nur für choices_single/choices_multi. */
+export const CUSTOM_FIELDS: { id: number; name: string; type: string; options: string[] }[] = [
+  { id: 1, name: 'Lieblingsessen', type: 'text', options: [] },
+  { id: 2, name: 'Golfspieler', type: 'bool', options: [] },
+  { id: 3, name: 'Sprachen', type: 'choices_multi', options: ['de', 'en', 'fr', 'nl'] },
+];
+
 export function createMockData() {
   const levels: MockLevel[] = [
     { id: 1, name: 'Round Table International', path: 'rt', subdomain: 'rt', sync_level: 4, parent: null },

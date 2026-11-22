@@ -1,5 +1,6 @@
 export {
   DEFAULT_BASE_URL,
+  DEMO_BASE_URL,
   ROUND_TABLE_FAMILY,
   WorldApiError,
   WorldClient,
