@@ -6,6 +6,9 @@ Auswertung von Profil (Ämter, Profilbild, Mitgliedszeitraum) und Vorstandsliste
 
 Node.js ≥ 22.13, ESM, keine Laufzeitabhängigkeiten (eingebautes `fetch`).
 
+Abgedeckt sind bisher 10 von 42 Endpunkten (Login, eigenes Profil lesen, Ebenen, Mitglieder, Verzeichnis,
+Veranstaltungssuche). Was fehlt, steht in [NEXT_STEPS.md](NEXT_STEPS.md).
+
 ## Installation
 
 ```json
