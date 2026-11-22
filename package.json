@@ -1,6 +1,6 @@
 {
   "name": "@round-table-germany/world-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Client für die .WORLD-API von Round Table (Drossel, Wiederholung, Cache, Profil-/Vorstandsauswertung) samt Mock-Server für Tests",
   "license": "MIT",
   "repository": {
