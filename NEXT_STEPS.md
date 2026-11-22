@@ -5,7 +5,8 @@ Abgleich mit der offiziellen Doku (Postman-Collection hinter
 `https://developer.roundtable.world/api/collections/51170267/2sBXVfhqSi?segregateAuth=true&versionTag=latest`).
 
 **Stand: alle 42 dokumentierten Endpunkte sind umgesetzt**, jeweils mit Methode, Typen, Mock-Route (Zustand im
-Speicher) und Test. Offen sind noch Typen und Auswertungshilfen, die keine eigenen Endpunkte sind.
+Speicher) und Test. Alle in der Doku beschriebenen Felder sind typisiert. Offen sind noch Auswertungshilfen für das
+Profil.
 
 ## Endpunkte
 
@@ -27,20 +28,21 @@ schreibender Aufrufe bei 5xx oder Netzfehlern (nur bei 429), `code`/`error_messa
 Profiländerungen, `DEMO_BASE_URL`, `FormData`-Upload für das Profilbild. Der Mock bildet das Geolocation-Limit und
 `400 { code, error_message }` nach.
 
+Typisierung: Konstanten `Family`, `SyncLevel` und `EVENT_TYPES` (zugleich Typen, `EventType`), `sync_family`/
+`sync_level` als Literal-Typen, vollständige Felder von `WorldEvent`, `WorldLevelDetails`, `WorldMemberSearch` und
+`WorldEventSearch`, `WorldMemberProfile` als Rückgabe von `member()`. Codes, die .WORLD erweitern könnte
+(`event_type`, `internal_type`), sind als `KnownOr<…>` typisiert: bekannte Werte mit Autovervollständigung, andere
+Strings bleiben erlaubt. Der Mock ist gegen diese Typen geprüft (`satisfies`/Rückgabetypen).
+
 ## Offen
 
-### Typen ergänzen (laut Doku vorhanden, bisher nicht typisiert)
+### Typen, die erst mit echten Daten genauer werden
 
-- [ ] `Family`-Konstanten (0 Round Table, 1 41 Club, 2 Ladies Circle, 3 Agora Club, 4 Tangent Club) und `SyncLevel`
-      (1 Club, 2 Area, 3 Association, 4 Family).
-- [ ] `WorldLevelDetails`: `hostname`, `details` (Logo, Kontakt, Bio, Social), `board_assistants`.
-- [ ] `WorldEvent`: `internal_type` (announcement|internal|external|sale), `cover_picture_url`, `external_url`,
-      `has_signup`, `signup_start_date`, `signup_deadline`, `signup_status` (0 abwesend, 1 anwesend, null offen),
-      `is_registration_active`. Der Mock liefert diese Felder bereits.
-- [ ] `EventType`-Union: `club_agm`, `hym`, `wm`, `agm`, `number`, `family`, `special-onetime`, `special-regularly`,
-      `as-statutory`, `statutory`, `zone`.
-- [ ] `member()` liefert heute `Record<string, unknown>`. Besser ein Typ `WorldMemberProfile` (wie `WorldMyProfile`,
-      aber nach Datenschutz gefiltert; `billing_address` und `email_private` sind immer `null`).
+- [ ] `WorldLevelDetails.details` (Logo, Kontakt, Bio, Social), `board` und `board_assistants`: Feldnamen nicht
+      dokumentiert, daher `Record<string, unknown>` bzw. `unknown[]`.
+- [ ] `WorldProfileCategory.values` ist `unknown`. Eine nach `code` unterschiedene Union (`profile_pic`, `personal`,
+      `address`, …) entsteht zusammen mit den Auswertungshilfen unten.
+- [ ] `shared_with_type` der Veranstaltungen (Werte nicht dokumentiert, vermutlich `club`/`area`/`association`/…).
 
 ### Auswertungshilfen für das Profil
 

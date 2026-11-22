@@ -23,4 +23,5 @@ export {
   type FunctionStatus,
 } from './profile.js';
 export { parseBoard, type BoardMember } from './board.js';
+export { EVENT_TYPES, Family, SyncLevel, type EventType } from './constants.js';
 export type * from './types.js';

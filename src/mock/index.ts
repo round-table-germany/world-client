@@ -9,6 +9,16 @@ import {
   type MockLevel,
   type MockMember,
 } from './data.js';
+import type { EventType } from '../constants.js';
+import type {
+  PrivacyLevel,
+  WorldEvent,
+  WorldFavorites,
+  WorldLevelDetails,
+  WorldLevelRef,
+  WorldMemberSummary,
+  WorldMyProfile,
+} from '../types.js';
 
 export { createMockData } from './data.js';
 export type { MockData, MockMember, MockLevel } from './data.js';
@@ -35,7 +45,16 @@ const GEO_LIMIT = 8;
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
-const PRIVACY_LEVELS = ['all', 'public', 'association', 'area', 'club', 'favorites', 'private'];
+const PRIVACY_LEVELS: readonly PrivacyLevel[] = [
+  'all',
+  'public',
+  'association',
+  'area',
+  'club',
+  'favorites',
+  'private',
+];
+const isPrivacyLevel = (v: unknown): v is PrivacyLevel => PRIVACY_LEVELS.includes(v as PrivacyLevel);
 const PRIVACY_FIELD =
   /^(education|company-position|gender|birth_date|birth_place|(address|phone|secondary-email|custom-field-category)-\d+)$/;
 
@@ -60,7 +79,7 @@ interface MemberState {
     speed: number;
     at: number;
   } | null;
-  privacy: Map<string, string>;
+  privacy: Map<string, PrivacyLevel>;
   title: string;
   gender: string;
   birthPlace: string;
@@ -127,7 +146,8 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
     const v = state(m).picVersion;
     return `https://example.com/pics/${m.id}.jpg${v > 1 ? `?v=${v}` : ''}`;
   };
-  const levelRef = (l: MockLevel) => ({
+  // Die Rückgabetypen halten den Mock deckungsgleich mit den Typen des Clients.
+  const levelRef = (l: MockLevel): WorldLevelRef => ({
     id: l.id,
     name: l.name,
     path: l.path,
@@ -141,7 +161,7 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
     while (l && l.sync_level < syncLevel) l = l.parent ? levelById(l.parent) : undefined;
     return l && l.sync_level === syncLevel ? l : undefined;
   };
-  const summary = (m: MockMember, viewer?: MockMember) => ({
+  const summary = (m: MockMember, viewer?: MockMember): WorldMemberSummary => ({
     id: m.id,
     first_name: m.first_name,
     last_name: m.last_name,
@@ -166,7 +186,7 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
   });
   const entries = (map: Map<number, Record<string, unknown>>) => [...map].map(([id, v]) => ({ id, ...v }));
   /** Profil; `own` = eigenes Profil (sonst ohne Rechnungsadresse und private E-Mail). */
-  const profile = (m: MockMember, own: boolean) => {
+  const profile = (m: MockMember, own: boolean): WorldMyProfile => {
     const s = state(m);
     return {
       cross_family_optin: s.crossFamily,
@@ -368,8 +388,7 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
         if (!m) return reply;
         const { field, level } = body(req);
         if (typeof field !== 'string' || !PRIVACY_FIELD.test(field)) return invalid(reply, 'Invalid field');
-        if (typeof level !== 'string' || !PRIVACY_LEVELS.includes(level))
-          return invalid(reply, 'Invalid level');
+        if (!isPrivacyLevel(level)) return invalid(reply, 'Invalid level');
         const s = state(m);
         if (level === 'all' && !s.crossFamily) {
           return invalid(reply, 'Cross-family sharing is not enabled', 'cross_family_required');
@@ -653,7 +672,7 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
             l.sync_level === 1 ? clubMembers.filter((m) => m.honorary).map((m) => summary(m, viewer)) : [],
           members:
             l.sync_level === 1 ? clubMembers.filter((m) => !m.honorary).map((m) => summary(m, viewer)) : [],
-        };
+        } satisfies WorldLevelDetails;
       });
 
       // ---------- Favoriten ----------
@@ -679,7 +698,7 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
           favorite_levels: [...s.favoriteLevels]
             .map(levelById)
             .flatMap((l) => (l ? [{ id: l.id, name: l.name, logo_url: null, path: l.path }] : [])),
-        };
+        } satisfies WorldFavorites;
       });
 
       const favoriteTarget = (req: FastifyRequest) => {
@@ -723,12 +742,12 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
       const event = (
         id: number,
         name: string,
-        eventType: string,
+        eventType: EventType,
         levelId: number,
         start: string,
         end: string,
-        extra: Record<string, unknown> = {},
-      ) => {
+        extra: Partial<WorldEvent> & { highlighted?: boolean } = {},
+      ): WorldEvent & { highlighted: boolean } => {
         const level = levelById(levelId)!;
         return {
           id,
@@ -769,7 +788,14 @@ export function createWorldMock(data: MockData = createMockData()): WorldMock {
         }),
         event(503, 'Tischabend RT 1', 'number', 101, '2027-01-12T19:00:00Z', '2027-01-12T23:00:00Z'),
       ];
-      const STATUTORY = ['club_agm', 'hym', 'wm', 'agm', 'as-statutory', 'statutory'];
+      const STATUTORY: (string | null | undefined)[] = [
+        'club_agm',
+        'hym',
+        'wm',
+        'agm',
+        'as-statutory',
+        'statutory',
+      ];
       const eventList =
         (filter: (e: (typeof events)[number], m: MockMember) => boolean) =>
         async (req: FastifyRequest, reply: FastifyReply) => {

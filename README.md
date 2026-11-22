@@ -23,12 +23,18 @@ Beim Installieren aus GitHub baut npm das Paket über das `prepare`-Skript.
 ## Verwendung
 
 ```ts
-import { WorldClient, WorldForbiddenError, myFunctions, parseBoard } from '@round-table-germany/world-client';
+import {
+  Family,
+  WorldClient,
+  WorldForbiddenError,
+  myFunctions,
+  parseBoard,
+} from '@round-table-germany/world-client';
 
 const world = new WorldClient({
   // alle Angaben optional
   baseUrl: 'https://api.roundtable.world/v1/app/', // muss mit "/" enden
-  family: 0, // sync_family beim Login, 0 = Round Table
+  family: Family.RoundTable, // sync_family beim Login (0 = Round Table)
   requestsPerMinute: 90, // pro Token, API-Limit 100
   log: (msg, data) => console.info(msg, data),
 });

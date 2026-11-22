@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createWorldMock, type WorldMock } from '../src/mock/index.js';
 import { WorldApiError, WorldClient, WorldForbiddenError, WorldUnavailableError } from '../src/client.js';
-import type { WorldEducation, WorldLoginSuccess, WorldMyProfile, WorldWork } from '../src/types.js';
+import type { WorldEducation, WorldLoginSuccess, WorldMemberProfile, WorldWork } from '../src/types.js';
 
 let mock: WorldMock;
 let client: WorldClient;
@@ -19,7 +19,7 @@ async function login(user: 'admin' | 'mitglied'): Promise<WorldLoginSuccess> {
   return r.data;
 }
 
-const category = (p: WorldMyProfile, code: string) =>
+const category = (p: WorldMemberProfile, code: string) =>
   p.profile_categories.find((c) => c.code === code)?.values as Record<string, unknown>;
 
 const address = {
@@ -160,7 +160,7 @@ describe('Eigenes Profil bearbeiten', () => {
 
     // Fremde sehen keine Rechnungsadresse.
     const other = await login('admin');
-    const pub = (await client.member(other.global_auth_token, 1002)) as unknown as WorldMyProfile;
+    const pub = await client.member(other.global_auth_token, 1002);
     expect(category(pub, 'address').billing_address).toBeNull();
   });
 

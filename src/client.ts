@@ -1,4 +1,5 @@
 import { TtlCache } from './cache.js';
+import { Family } from './constants.js';
 import { SlidingWindowLimiter } from './limiter.js';
 import type {
   FavoriteType,
@@ -19,6 +20,7 @@ import type {
   WorldLevelRef,
   WorldLocationUpdate,
   WorldLoginSuccess,
+  WorldMemberProfile,
   WorldMemberSearch,
   WorldMemberSummary,
   WorldMyLevels,
@@ -33,7 +35,7 @@ import type {
 } from './types.js';
 
 /** Familie Round Table (Standard für `family`). */
-export const ROUND_TABLE_FAMILY = 0;
+export const ROUND_TABLE_FAMILY = Family.RoundTable;
 
 /** Produktive Basis-URL der .WORLD-App-API. */
 export const DEFAULT_BASE_URL = 'https://api.roundtable.world/v1/app/';
@@ -77,7 +79,7 @@ export interface WorldClientOptions {
   /** Basis-URL der API, muss mit "/" enden (Standard: DEFAULT_BASE_URL). */
   baseUrl?: string;
   /** Familie, deren Mitglieder sich anmelden dürfen (`sync_family`, Standard: 0 = Round Table). */
-  family?: number;
+  family?: Family;
   fetch?: typeof fetch;
   /** Anfragen pro Token und Minute (API-Limit 100). */
   requestsPerMinute?: number;
@@ -117,7 +119,7 @@ export class WorldClient {
   private readonly maxRetries: number;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly baseUrl: string;
-  private readonly family: number;
+  private readonly family: Family;
 
   constructor(private readonly opts: WorldClientOptions = {}) {
     this.baseUrl = opts.baseUrl ?? DEFAULT_BASE_URL;
@@ -178,9 +180,12 @@ export class WorldClient {
 
   // ---------- Mitglieder ----------
 
-  /** Profil eines Mitglieds; wirft WorldForbiddenError bei inaktivem Mitglied (oder fehlendem Zugriff). */
-  member(globalToken: string, memberId: number): Promise<Record<string, unknown>> {
-    return this.get<Record<string, unknown>>(`members/${memberId}/`, globalToken);
+  /**
+   * Profil eines Mitglieds (nach dessen Datenschutz-Einstellungen gefiltert); wirft WorldForbiddenError bei
+   * inaktivem Mitglied, ungültiger ID, fehlendem Zugriff oder fremder Familie ohne beidseitiges Opt-in.
+   */
+  member(globalToken: string, memberId: number): Promise<WorldMemberProfile> {
+    return this.get<WorldMemberProfile>(`members/${memberId}/`, globalToken);
   }
 
   async searchMembers(

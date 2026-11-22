@@ -1,4 +1,4 @@
-import type { MemberFunction, WorldMyProfile } from './types.js';
+import type { MemberFunction, WorldMemberProfile } from './types.js';
 
 /**
  * Auswertung von /my-profile/ bzw. /members/:id/.
@@ -8,7 +8,7 @@ import type { MemberFunction, WorldMyProfile } from './types.js';
  * innerhalb von `start_date` … `end_date` liegt (fehlendes Datum = offen).
  */
 
-function category(profile: WorldMyProfile, code: string): Record<string, unknown> | undefined {
+function category(profile: WorldMemberProfile, code: string): Record<string, unknown> | undefined {
   const cat = profile.profile_categories?.find((c) => c.code === code);
   const values = cat?.values;
   return values && typeof values === 'object' && !Array.isArray(values)
@@ -16,25 +16,25 @@ function category(profile: WorldMyProfile, code: string): Record<string, unknown
     : undefined;
 }
 
-export function profilePicUrl(profile: WorldMyProfile): string | null {
+export function profilePicUrl(profile: WorldMemberProfile): string | null {
   const v = category(profile, 'profile_pic')?.profile_pic_url;
   return typeof v === 'string' && v ? v : null;
 }
 
-export function memberUntilDate(profile: WorldMyProfile): string | null {
+export function memberUntilDate(profile: WorldMemberProfile): string | null {
   const v = category(profile, 'personal')?.member_until_date;
   return typeof v === 'string' && v ? v : null;
 }
 
-export function memberStartDate(profile: WorldMyProfile): string | null {
+export function memberStartDate(profile: WorldMemberProfile): string | null {
   const v = category(profile, 'personal')?.member_start_date;
   return typeof v === 'string' && v ? v.slice(0, 10) : null;
 }
 
 /** Profile anderer Mitglieder (/members/:id/) haben „ähnliche Struktur“ – ggf. flach. */
-export function profilePicFromAny(data: Record<string, unknown>): string | null {
-  if (Array.isArray(data.profile_categories)) return profilePicUrl(data as unknown as WorldMyProfile);
-  const v = data.profile_pic_url;
+export function profilePicFromAny(data: WorldMemberProfile | Record<string, unknown>): string | null {
+  if (Array.isArray(data.profile_categories)) return profilePicUrl(data as WorldMemberProfile);
+  const v = (data as Record<string, unknown>).profile_pic_url;
   return typeof v === 'string' && v ? v : null;
 }
 
@@ -135,14 +135,15 @@ export function extractFunctions(groupsValues: unknown, today = new Date().toISO
 }
 
 /** Rohdaten, aus denen die Ämter gelesen werden (Kategorie "groups" bzw. flaches Feld). */
-export function groupsSource(data: Record<string, unknown>): unknown {
+export function groupsSource(data: WorldMemberProfile | Record<string, unknown>): unknown {
   if (Array.isArray(data.profile_categories)) {
-    const cat = (data as unknown as WorldMyProfile).profile_categories?.find((c) => c.code === 'groups');
+    const cat = (data as WorldMemberProfile).profile_categories.find((c) => c.code === 'groups');
     return cat?.values ?? null;
   }
-  return data.groups ?? null;
+  return (data as Record<string, unknown>).groups ?? null;
 }
 
-export function myFunctions(profile: WorldMyProfile): MemberFunction[] {
-  return extractFunctions(groupsSource(profile as unknown as Record<string, unknown>) ?? []);
+/** Aktuell gültige Ämter aus `my-profile/` oder `members/:id/`. */
+export function myFunctions(profile: WorldMemberProfile): MemberFunction[] {
+  return extractFunctions(groupsSource(profile) ?? []);
 }

@@ -1,4 +1,12 @@
-/** Typen der .WORLD-API (nur die von der App genutzten Felder; Doku: developer.roundtable.world). */
+/** Typen der .WORLD-API (Doku: developer.roundtable.world). */
+
+import type { EventType, Family, SyncLevel } from './constants.js';
+
+/**
+ * Bekannte Werte als Vorschlag, andere Strings bleiben erlaubt (für Codes, die .WORLD später ergänzt).
+ * `string & {}` verhindert, dass TypeScript die Union zu `string` zusammenfasst.
+ */
+export type KnownOr<T extends string> = T | (string & {});
 
 export interface WorldLevelRef {
   id: number;
@@ -6,8 +14,8 @@ export interface WorldLevelRef {
   path?: string;
   logo?: string | null;
   subdomain?: string;
-  sync_family?: number;
-  sync_level?: number;
+  sync_family?: Family;
+  sync_level?: SyncLevel;
 }
 
 export interface WorldMe {
@@ -40,9 +48,17 @@ export interface WorldPrivacySetting {
   level: PrivacyLevel;
 }
 
-export interface WorldMyProfile {
-  cross_family_optin?: boolean;
+/**
+ * Profil eines anderen Mitglieds (`members/:id/`): Aufbau wie `my-profile/`, aber nach den Datenschutz-Einstellungen
+ * des Mitglieds gefiltert – nur freigegebene Felder, `billing_address` und `email_private` sind immer `null`.
+ */
+export interface WorldMemberProfile {
   profile_categories: WorldProfileCategory[];
+}
+
+/** Eigenes Profil (`my-profile/`). */
+export interface WorldMyProfile extends WorldMemberProfile {
+  cross_family_optin?: boolean;
   privacy_settings?: WorldPrivacySetting[];
 }
 
@@ -63,12 +79,20 @@ export interface WorldMemberSummary {
 }
 
 export interface WorldLevelDetails extends WorldLevelRef {
+  /** Vollständiger Hostname, z. B. "92-be.roundtable.world". */
+  hostname?: string;
   sync_parent?: number | null;
   children?: WorldLevelRef[];
-  members?: WorldMemberSummary[];
-  honorary_members?: WorldMemberSummary[];
-  /** Vorstand der Ebene; Aufbau nicht dokumentiert (siehe world/board.ts). */
+  /** Logo, Kontakt, Bio und Social Media der Ebene; Feldnamen nicht dokumentiert. */
+  details?: Record<string, unknown> | null;
+  /** Vorstand der Ebene; Aufbau nicht dokumentiert (Auswertung mit parseBoard()). */
   board?: unknown[];
+  /** Vorstandsassistenten; Aufbau nicht dokumentiert. */
+  board_assistants?: unknown[];
+  /** Nur bei Clubs. */
+  members?: WorldMemberSummary[];
+  /** Nur bei Clubs. */
+  honorary_members?: WorldMemberSummary[];
 }
 
 export interface WorldPage<T> {
@@ -84,32 +108,71 @@ export interface WorldFunctionConfig {
   display_order?: number;
 }
 
+/** Art des Eintrags im Kalender. */
+export type EventInternalType = 'announcement' | 'internal' | 'external' | 'sale';
+
+/** Rückmeldung zur Veranstaltung: 0 = abwesend, 1 = anwesend, null = keine Antwort. */
+export type EventSignupStatus = 0 | 1 | null;
+
 export interface WorldEvent {
   id: number;
   name: string;
+  /** HTML. */
   description?: string | null;
+  internal_type?: KnownOr<EventInternalType> | null;
+  /** ISO-Datum mit Uhrzeit. */
   start_date?: string | null;
+  /** ISO-Datum mit Uhrzeit. */
   end_date?: string | null;
-  event_type?: string | null;
+  cover_picture_url?: string | null;
+  event_type?: KnownOr<EventType> | null;
+  /** Ausrichtender Club bzw. ausrichtende Ebene. */
   club?: { id: number; name: string } | null;
+  /** Sichtbarkeit, z. B. "area" oder "association". */
   shared_with_type?: string | null;
   shared_with_level?: WorldLevelRef | null;
+  /** Persönlicher Link des Nutzers zur Veranstaltung. */
+  external_url?: string | null;
+  /** Anmeldung möglich. */
+  has_signup?: boolean;
+  signup_start_date?: string | null;
+  signup_deadline?: string | null;
+  signup_status?: EventSignupStatus;
+  /** Anmeldung derzeit offen. */
+  is_registration_active?: boolean;
 }
 
 export interface WorldEventSearch {
+  /** Name, ohne Groß-/Kleinschreibung. */
   query?: string;
+  /** YYYY-MM-DD (Standard: heute). */
   start_date?: string | null;
+  /** YYYY-MM-DD (Standard: heute + 400 Tage). */
   end_date?: string | null;
+  /** Genau diese ausrichtende Ebene. */
   organising_level?: number | null;
+  /** Alle Ebenen unterhalb dieser Ebene (Club, Distrikt, Assoziation oder Familie). */
   organising_region?: number | null;
-  organising_sync_level?: number | number[] | null;
-  event_type?: string | null;
+  organising_sync_level?: SyncLevel | SyncLevel[] | null;
+  event_type?: KnownOr<EventType> | null;
 }
 
 export interface WorldMemberSearch {
+  /** Textsuche im Namen. */
   query?: string;
   level?: number | null;
+  club_number?: string | null;
+  /** Branchencode, z. B. "information-technology". */
+  job_sector?: string | null;
+  job_function?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  /** Amt (Name aus functionsConfig()). */
   function_name?: string | null;
+  /** YYYY-MM-DD: Amt gehalten ab … */
+  function_between_start?: string | null;
+  /** YYYY-MM-DD: … bis */
+  function_between_end?: string | null;
   order_by?: 'first_name' | 'last_name';
 }
 
@@ -256,6 +319,19 @@ export interface WorldWork {
   website: string;
   vat_nr: string;
 }
+
+/** Feldtypen eigener Felder (`custom-<id>`). */
+export type WorldCustomFieldType =
+  | 'text'
+  | 'textarea'
+  | 'choices_single'
+  | 'choices_multi'
+  | 'date'
+  | 'datetime'
+  | 'int'
+  | 'auto'
+  | 'bool'
+  | 'link';
 
 /**
  * Wert eines eigenen Felds: text/textarea/choices_single/link/date/datetime als string,
